@@ -7,6 +7,20 @@
   <meta name="description" content="Tell me how you feel, I suggest the perfect movie!">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Load secret key from Netlify -->
+  <script>
+    // Only runs on live site
+    fetch('/.netlify/functions/env')
+      .then(r => r.json())
+      .then(env => {
+        window.GROQ_API_KEY = env.GROQ_API_KEY;
+      })
+      .catch(() => {
+        console.warn("Not on Netlify – using fallback");
+      });
+  </script>
+
   <style>
     :root {
       --bg: #0f0f12;
@@ -57,7 +71,6 @@
       width: 100%;
       max-width: 750px;
       margin-bottom: 30px;
-      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -70,7 +83,6 @@
       border: 2px solid var(--border);
       border-radius: 20px;
       outline: none;
-      transition: all 0.4s ease;
       background: var(--card);
       color: var(--text);
       box-shadow: 0 8px 25px rgba(0,0,0,0.3);
@@ -341,12 +353,14 @@
   </div>
 
   <footer>
-    Made by <a aria-describedby="open-in-new-tab" href ="https://www.youtube.com/@Velmet44">Velmet</a>
+    Made by <a href = "https://www.youtube.com/@Velmet44">Velmet</a>
   </footer>
 
   <script>
-    const GROQ_API_KEY = "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";
+    // Wait for key to load
+    let GROQ_API_KEY = "loading...";
 
+    // Elements
     const moodInput = document.getElementById('moodInput');
     const generateBtn = document.getElementById('generateBtn');
     const loading = document.getElementById('loading');
@@ -378,6 +392,12 @@
         return;
       }
 
+      // Wait for key
+      if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "loading...") {
+        showError("Loading API key...");
+        return;
+      }
+
       generateBtn.disabled = true;
       loading.style.display = 'block';
       result.style.display = 'none';
@@ -403,18 +423,18 @@ Respond ONLY with valid JSON:
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${GROQ_API_KEY}`,
+            "Authorization": `Bearer ${window.GROQ_API_KEY}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
             model: "llama-3.1-8b-instant",
+            messages: [{ role: "user", content: prompt }],
             max_tokens: 300,
-            temperature: 0.9 + (seed % 3) * 0.1,
-            messages: [{ role: "user", content: prompt }]
+            temperature: 0.9 + (seed % 3) * 0.1
           })
         });
 
-        if (!response.ok) throw new Error(`Groq Status: ${response.status}`);
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
 
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || "{}";
@@ -484,7 +504,7 @@ Respond ONLY with valid JSON:
         };
 
       } catch (err) {
-        showError("AI is Experiencing issues... Try again.");
+        showError("AI error. Try again.");
       } finally {
         generateBtn.disabled = false;
         loading.style.display = 'none';
