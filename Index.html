@@ -11,7 +11,6 @@
 
   <!-- Load secret key from Netlify -->
   <script>
-    // Only runs on live site
     fetch('/.netlify/functions/env')
       .then(r => r.json())
       .then(env => {
@@ -354,12 +353,12 @@
   </div>
 
   <footer>
-    Made by <a href = "https://www.youtube.com/@Velmet44">Velmet</a>
+    Made by <a href="https://www.youtube.com/@Velmet44">Velmet</a>
   </footer>
 
   <script>
-    // Wait for key to load
-    let GROQ_API_KEY = "loading...";
+    // Rate limiting: 1 request per 10 seconds
+    let lastRequest = 0;
 
     // Elements
     const moodInput = document.getElementById('moodInput');
@@ -393,6 +392,14 @@
         return;
       }
 
+      // Rate limit check
+      const now = Date.now();
+      if (lastRequest && now - lastRequest < 10000) {
+        showError("Please wait 10 seconds after using once to avoid traffic");
+        return;
+      }
+      lastRequest = now;
+
       // Wait for key
       if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "loading...") {
         showError("Loading API key...");
@@ -406,20 +413,7 @@
 
       try {
         const seed = Date.now();
-        const prompt = `Suggest ONE movie for this vibe: "${input}". 
-IMPORTANT: Do NOT suggest any of these movies: ${lastMovies.join(', ') || 'none'}.
-Respond ONLY with valid JSON:
-{
-  "title": "Movie Title",
-  "year": 2023,
-  "why": "Short reason (2-3 sentences).",
-  "director": "Director Name",
-  "cast": "Actor1, Actor2, Actor3",
-  "runtime": "148 min",
-  "imdb": "8.8",
-  "genre": "Sci-fi, Thriller",
-  "tags": ["sci-fi", "thriller", "mind-bending"]
-}`;
+        const prompt = `Mood: "${input}". Avoid: ${lastMovies.slice(-3).join(', ') || 'none'}. JSON only: {title, year, why, director, cast, runtime, imdb, genre, tags[]}`;
 
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
@@ -428,10 +422,10 @@ Respond ONLY with valid JSON:
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "llama-3.2-3b-instant",
             messages: [{ role: "user", content: prompt }],
-            max_tokens: 300,
-            temperature: 0.9 + (seed % 3) * 0.1
+            max_tokens: 140,
+            temperature: 0.8
           })
         });
 
@@ -439,7 +433,6 @@ Respond ONLY with valid JSON:
 
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || "{}";
-
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         let movie = {
           title: "Inception",
@@ -454,7 +447,7 @@ Respond ONLY with valid JSON:
         };
 
         if (jsonMatch) {
-          try { 
+          try {
             const parsed = JSON.parse(jsonMatch[0]);
             if (parsed.title && !lastMovies.includes(parsed.title)) {
               movie = { ...movie, ...parsed };
@@ -505,7 +498,7 @@ Respond ONLY with valid JSON:
         };
 
       } catch (err) {
-        showError("We are experiencing high traffic... Try again later. Sorry for teh inconvenience :(");
+        showError("We are experiencing high traffic... Try again later. Sorry for the inconvenience :(");
       } finally {
         generateBtn.disabled = false;
         loading.style.display = 'none';
