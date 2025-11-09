@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" href="data:,">
+  <meta name="google-site-verification" content="7GAVrYSzuGPpTJZ6n5YhjcjNwIdAD6g9_obMbNdAUV8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mood to Movie - AI Movie Picker</title>
+  <meta name="description" content="Tell me how you feel, I suggest the perfect movie!">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- VERCEL: Inject API key from GitHub Secrets -->
+  <script type="module">
+    window.GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "no-key";
+  </script>
+
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a1e;
+      --text: #e0e0e0;
+      --accent: #8b5cf6;
+      --accent-light: #a78bfa;
+      --border: #333;
+      --shadow: 0 15px 40px rgba(139, 92, 246, 0.15);
+      --glow: 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: radial-gradient(circle at top left, #1a1a2e, #0f0f12);
+    }
+    header {
+      text-align: center;
+      margin: 40px 0 50px;
+      max-width: 800px;
+      width: 100%;
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+    p.tagline {
+      font-size: 1.2rem;
+      color: #aaa;
+      line-height: 1.7;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .input-container {
+      width: 100%;
+      max-width: 750px;
+      margin-bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #moodInput {
+      width: 100%;
+      max-width: 700px;
+      padding: 18px 24px;
+      font-size: 1.15rem;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      outline: none;
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    #moodInput:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow), 0 0 0 6px rgba(139, 92, 246, 0.15);
+      transform: translateY(-2px);
+    }
+    #generateBtn {
+      margin-top: 18px;
+      width: 100%;
+      max-width: 700px;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      box-shadow: var(--shadow);
+    }
+    #generateBtn:hover {
+      background: linear-gradient(135deg, #7c3aed, #9333ea);
+      transform: translateY(-3px);
+      box-shadow: var(--glow);
+    }
+    #generateBtn:disabled {
+      background: #444;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 25px 0;
+      color: var(--accent);
+      font-weight: 500;
+      font-size: 1.1rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #333;
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .result {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 35px;
+      max-width: 750px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow);
+      display: none;
+      animation: fadeInUp 0.7s ease;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .result::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .movie-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: var(--accent-light);
+      margin: 18px 0;
+      text-shadow: 0 2px 10px rgba(139, 92, 246, 0.2);
+    }
+    .movie-year {
+      color: #888;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .why {
+      font-size: 1.15rem;
+      line-height: 1.8;
+      margin: 25px 0;
+      color: #ccc;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .details {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px dashed rgba(139, 92, 246, 0.3);
+      border-radius: 16px;
+      padding: 22px;
+      margin: 25px 0;
+      font-size: 1rem;
+      color: #ddd;
+      line-height: 1.8;
+      text-align: left;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .details h4 {
+      color: var(--accent-light);
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .details i {
+      font-size: 1rem;
+      color: var(--accent);
+    }
+    .trailer-link {
+      display: inline-block;
+      margin-top: 25px;
+      padding: 12px 24px;
+      background: rgba(255, 0, 0, 0.1);
+      color: #ff0000;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.3s;
+      border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+    .trailer-link:hover {
+      background: rgba(255, 0, 0, 0.2);
+      box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+    }
+    .trailer-link i {
+      margin-right: 8px;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 25px 0;
+    }
+    .tag {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--accent-light);
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 25px;
+    }
+    .share-btn, .copy-btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 50px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: 0.3s;
+      font-size: 1rem;
+    }
+    .share-btn {
+      background: #25D366;
+      color: white;
+    }
+    .share-btn:hover { background: #1da851; }
+    .copy-btn {
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--accent-light);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+    .copy-btn:hover {
+      background: rgba(139, 92, 246, 0.3);
+      box-shadow: var(--glow);
+    }
+    .share-btn svg, .copy-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    footer {
+      margin-top: 80px;
+      font-size: 0.95rem;
+      color: #999;
+      text-align: center;
+    }
+    .error {
+      color: #ff6b6b;
+      font-size: 0.95rem;
+      margin-top: 12px;
+      display: none;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 2.5rem; }
+      .actions { flex-direction: column; }
+      .share-btn, .copy-btn { justify-content: center; }
+      .details { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mood to Movie</h1>
+    <p class="tagline">Tell me how you feel — I'll find the perfect film.</p>
+  </header>
+  <div class="input-container">
+    <input type="text" id="moodInput" placeholder="e.g. 'late night existential crisis' or 'cyberpunk adrenaline'" />
+    <button id="generateBtn">Find My Movie</button>
+    <p class="error" id="errorMsg"></p>
+  </div>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>AI is dreaming up your perfect film...</span>
+  </div>
+  <div class="result" id="result">
+    <h2 class="movie-title" id="movieTitle"></h2>
+    <p class="movie-year" id="movieYear"></p>
+    <p class="why" id="whyText"></p>
+    <div class="details" id="detailsText">
+      <h4>Director</h4>
+      <p id="director"></p>
+      <h4>Cast</h4>
+      <p id="cast"></p>
+      <h4>Runtime & IMDb</h4>
+      <p id="runtime"></p>
+      <h4>Genre</h4>
+      <p id="genre"></p>
+    </div>
+    <a href="#" target="_blank" class="trailer-link" id="trailerLink">
+      Watch Trailer
+    </a>
+    <div class="tags" id="tags"></div>
+    <div class="actions">
+      <button class="share-btn" id="shareBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+        Share on WhatsApp
+      </button>
+      <button class="copy-btn" id="copyBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        Copy Link
+      </button>
+    </div>
+  </div>
+  <footer>
+    Made by <a href="https://www.youtube.com/@Velmet44">Velmet</a>
+  </footer>
+
+  <script type="module">
+    // Rate limiting: 1 request per 10 seconds
+    let lastRequest = 0;
+    // Elements
+    const moodInput = document.getElementById('moodInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    const movieTitle = document.getElementById('movieTitle');
+    const movieYear = document.getElementById('movieYear');
+    const whyText = document.getElementById('whyText');
+    const director = document.getElementById('director');
+    const cast = document.getElementById('cast');
+    const runtime = document.getElementById('runtime');
+    const genre = document.getElementById('genre');
+    const trailerLink = document.getElementById('trailerLink');
+    const tagsContainer = document.getElementById('tags');
+    const shareBtn = document.getElementById('shareBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    let lastMovies = [];
+
+    async function getYouTubeTrailer(title, year = '') {
+      const query = encodeURIComponent(`${title} ${year} official trailer`);
+      return `https://www.youtube.com/results?search_query=${query}`;
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      const input = moodInput.value.trim();
+      if (!input) {
+        showError("Please describe your mood!");
+        return;
+      }
+
+      // Rate limit check
+      const now = Date.now();
+      if (lastRequest && now - lastRequest < 10000) {
+        showError("Please wait 10 seconds after using once to avoid traffic");
+        return;
+      }
+      lastRequest = now;
+
+      // Wait for key
+      if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "no-key") {
+        showError("API key not loaded! Check GitHub Secrets.");
+        return;
+      }
+
+      generateBtn.disabled = true;
+      loading.style.display = 'block';
+      result.style.display = 'none';
+      errorMsg.style.display = 'none';
+
+      try {
+        const prompt = `Mood: "${input}". Avoid: ${lastMovies.slice(-3).join(', ') || 'none'}. JSON only: {title, year, why, director, cast, runtime, imdb, genre, tags[]}`;
+
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${window.GROQ_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.2-3b-instant",
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 140,
+            temperature: 0.8
+          })
+        });
+
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || "{}";
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        let movie = {
+          title: "Inception",
+          year: 2010,
+          why: "A mind-bending journey through dreams that matches any introspective vibe.",
+          director: "Christopher Nolan",
+          cast: "Leonardo DiCaprio, Ellen Page, Tom Hardy",
+          runtime: "148 min",
+          imdb: "8.8",
+          genre: "Sci-fi, Thriller",
+          tags: ["sci-fi", "thriller", "dreamy"]
+        };
+
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.title && !lastMovies.includes(parsed.title)) {
+              movie = { ...movie, ...parsed };
+            }
+          } catch (e) {}
+        }
+
+        if (!lastMovies.includes(movie.title)) {
+          lastMovies.push(movie.title);
+          if (lastMovies.length > 5) lastMovies.shift();
+        }
+
+        const trailerUrl = await getYouTubeTrailer(movie.title, movie.year);
+
+        movieTitle.textContent = movie.title;
+        movieYear.textContent = `(${movie.year})`;
+        whyText.textContent = movie.why;
+        director.textContent = movie.director || "Unknown";
+        cast.textContent = movie.cast || "Unknown";
+        runtime.textContent = `${movie.runtime || "N/A"} • IMDb: ${movie.imdb || "N/A"}`;
+        genre.textContent = movie.genre || "Unknown";
+        trailerLink.href = trailerUrl;
+
+        tagsContainer.innerHTML = "";
+        (movie.tags || []).forEach(tag => {
+          const span = document.createElement('span');
+          span.className = 'tag';
+          span.textContent = tag;
+          tagsContainer.appendChild(span);
+        });
+
+        result.style.display = 'block';
+        result.scrollIntoView({ behavior: 'smooth' });
+
+        const shareText = `*${movie.title}* (${movie.year})\n\n"${movie.why}"\n\n*Director:* ${movie.director}\n*Cast:* ${movie.cast}\n*Runtime:* ${movie.runtime} • *IMDb:* ${movie.imdb}\n*Genre:* ${movie.genre}\n\nTrailer: ${trailerUrl}\n\nTry it: https://moodtomovie.ai`;
+
+        shareBtn.onclick = () => {
+          window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+        };
+
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(shareText).then(() => {
+            copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Copied!';
+            setTimeout(() => {
+              copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy Link';
+            }, 2000);
+          });
+        };
+
+      } catch (err) {
+        showError("We are experiencing high traffic... Try again later. Sorry for the inconvenience :(");
+      } finally {
+        generateBtn.disabled = false;
+        loading.style.display = 'none';
+      }
+    });
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+
+    moodInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') generateBtn.click();
+    });
+  </script>
+</body>
+</html>
