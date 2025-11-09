@@ -10,10 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- VERCEL: Inject API key at build time -->
-<script type="module">
-  window.GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "no-key";
-</script>
+  <!-- VERCEL: Inject API key from GitHub Secrets -->
+  <script type="module">
+    window.GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "no-key";
+  </script>
 
   <style>
     :root {
@@ -299,23 +299,19 @@
   </style>
 </head>
 <body>
-
   <header>
     <h1>Mood to Movie</h1>
     <p class="tagline">Tell me how you feel — I'll find the perfect film.</p>
   </header>
-
   <div class="input-container">
     <input type="text" id="moodInput" placeholder="e.g. 'late night existential crisis' or 'cyberpunk adrenaline'" />
     <button id="generateBtn">Find My Movie</button>
     <p class="error" id="errorMsg"></p>
   </div>
-
   <div class="loading" id="loading">
     <div class="spinner"></div>
     <span>AI is dreaming up your perfect film...</span>
   </div>
-
   <div class="result" id="result">
     <h2 class="movie-title" id="movieTitle"></h2>
     <p class="movie-year" id="movieYear"></p>
@@ -345,7 +341,6 @@
       </button>
     </div>
   </div>
-
   <footer>
     Made by <a href="https://www.youtube.com/@Velmet44">Velmet</a>
   </footer>
@@ -353,7 +348,6 @@
   <script type="module">
     // Rate limiting: 1 request per 10 seconds
     let lastRequest = 0;
-
     // Elements
     const moodInput = document.getElementById('moodInput');
     const generateBtn = document.getElementById('generateBtn');
@@ -371,7 +365,6 @@
     const shareBtn = document.getElementById('shareBtn');
     const copyBtn = document.getElementById('copyBtn');
     const errorMsg = document.getElementById('errorMsg');
-
     let lastMovies = [];
 
     async function getYouTubeTrailer(title, year = '') {
@@ -395,8 +388,8 @@
       lastRequest = now;
 
       // Wait for key
-      if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "fallback-key") {
-        showError("API key not loaded! Check Vercel settings.");
+      if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "no-key") {
+        showError("API key not loaded! Check GitHub Secrets.");
         return;
       }
 
@@ -507,6 +500,5 @@
       if (e.key === 'Enter') generateBtn.click();
     });
   </script>
-
 </body>
 </html>
