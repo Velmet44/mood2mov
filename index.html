@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- STATIC API KEY (TESTING ONLY - REMOVE LATER!) -->
+  <!-- STATIC API KEY (TESTING ONLY) -->
   <script type="module">
     window.GROQ_API_KEY = "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";
   </script>
@@ -346,14 +346,12 @@
   </footer>
 
   <script type="module">
-    // Rate limiting: 1 request per 10 seconds
-    let lastRequest = 0;
     // Elements
     const moodInput = document.getElementById('moodInput');
     const generateBtn = document.getElementById('generateBtn');
     const loading = document.getElementById('loading');
     const result = document.getElementById('result');
-    const movieTitle = document.getElementById('movieTitle');
+    const movieTitle =92 document.getElementById('movieTitle');
     const movieYear = document.getElementById('movieYear');
     const whyText = document.getElementById('whyText');
     const director = document.getElementById('director');
@@ -378,13 +376,6 @@
         showError("Please describe your mood!");
         return;
       }
-
-      const now = Date.now();
-      if (lastRequest && now - lastRequest < 10000) {
-        showError("Please wait 10 seconds after using once to avoid traffic");
-        return;
-      }
-      lastRequest = now;
 
       if (!window.GROQ_API_KEY) {
         showError("API key missing!");
@@ -413,7 +404,7 @@
           })
         });
 
-        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || "{}";
@@ -482,7 +473,7 @@
         };
 
       } catch (err) {
-        showError("We are experiencing high traffic... Try again later. Sorry for the inconvenience :(");
+        showError("Failed to connect to AI. Please try again.");
       } finally {
         generateBtn.disabled = false;
         loading.style.display = 'none';
