@@ -10,9 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-<script type="module">
-  window.GROQ_API_KEY = "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";
-</script>
+  <!-- STATIC API KEY (TESTING ONLY - REMOVE LATER!) -->
+  <script type="module">
+    window.GROQ_API_KEY = "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";
+  </script>
 
   <style>
     :root {
@@ -378,7 +379,6 @@
         return;
       }
 
-      // Rate limit check
       const now = Date.now();
       if (lastRequest && now - lastRequest < 10000) {
         showError("Please wait 10 seconds after using once to avoid traffic");
@@ -386,9 +386,8 @@
       }
       lastRequest = now;
 
-      // Wait for key
-      if (!window.GROQ_API_KEY || window.GROQ_API_KEY === "no-key") {
-        showError("API key not loaded! Check GitHub Secrets.");
+      if (!window.GROQ_API_KEY) {
+        showError("API key missing!");
         return;
       }
 
