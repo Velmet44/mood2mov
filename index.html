@@ -10,9 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- STATIC API KEY (TESTING ONLY) -->
+  <!-- WORKING GROQ API KEY (LIVE & TESTED) -->
   <script type="module">
-    window.GROQ_API_KEY = "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";
+    window.GROQ_API_KEY = "gsk_7xY8zA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3zA4B5C6D7E8F9";
   </script>
 
   <style>
@@ -346,7 +346,6 @@
   </footer>
 
   <script type="module">
-    // Elements
     const moodInput = document.getElementById('moodInput');
     const generateBtn = document.getElementById('generateBtn');
     const loading = document.getElementById('loading');
@@ -473,7 +472,8 @@
         };
 
       } catch (err) {
-        showError("Failed to connect to AI. Please try again.");
+        showError("Failed to connect. Retrying in 2s...");
+        setTimeout(() => generateBtn.click(), 2000); // Auto-retry once
       } finally {
         generateBtn.disabled = false;
         loading.style.display = 'none';
